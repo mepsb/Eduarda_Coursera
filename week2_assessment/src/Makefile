@@ -24,26 +24,33 @@
 include sources.mk
 
 # Platform Overrides
-#PLATFORM = 
-
+# Compiler Flags for different platforms
+ifeq ($(PLATFORM),MSP432)
 # Architectures Specific Flags
 LINKER_FILE = msp432p401r.lds
-
 # Specifies the target ARM Cortex Architecture
-CPU = cortex-m0plus
-
+CPU = cortex-m4
 # Specifies the instructions set architecture. For ARM processor, there are two main instructions sets - ARM and Thumb
 ARCH = thumb
-
 # Specifies the specs file to give to the linker. "nosys.specs" means that the standard I/O syscalls are not provided by the system.
 SPECS = nosys.specs 
-
+LDFLAGS_ARCH = -T $(LINKER_FILE)
+CFLAGS_ARCH = -mcpu=$(CPU) -m$(ARCH) --specs=$(SPECS) -I/some/directory
+PLATFORM_FLAGS = -DPLATFORM_MSP432
 # Compiler Flags and Defines
 # CC - Compiler that will perform the build (Native or Cross)
 CC = arm-none-eabi-gcc
-
 # LD - Specifies the linker to be used 
 LD = arm-none-eabi-ld
+endif
+
+
+ifeq ($(PLATFORM),HOST)
+PLATFORM_FLAGS = -DPLATFORM_HOST
+CC = gcc
+endif
+
+
 
 # TARGET - Specifies the target name for the final executable
 TARGET = c1m2
@@ -51,11 +58,13 @@ TARGET = c1m2
 # LDFLAGS - Linker Flags
 # Map file generation: -Wl,-Map=$(TARGET).map 
 # Linker file: -T $(LINKER_FILE)
-LDFLAGS = -Wl,-Map=$(TARGET).map -T $(LINKER_FILE)
+#LDFLAGS = -Wl,-Map=$(TARGET).map -T $(LINKER_FILE)
+LDFLAGS = -Wl,-Map=$(TARGET).map $(LDFLAGS_ARCH)
+
 
 # CFLAGS - C-programming flags for gcc
 # Specifies compilation flags, including the CPU and ARCH settings, specs file, and enabling all compiler warnings with -Wall
-CFLAGS = -mcpu=$(CPU) -m$(ARCH) --specs=$(SPECS) -Wall
+CFLAGS = $(INCLUDES) $(CFLAGS_ARCH) -Wall -Werror -g -O0 -I/some/directory
 
 # CPPFLAGS - C-Preprocessor Flags
 # For now, they won't be declared 
@@ -66,7 +75,8 @@ OBJS = $(SOURCES:.c=.o)
 
 # Pattern rule that specifies how to compile C source files into object files. It uses the CC variable, along with CFLAGS.
 %.o : %.c
-	$(CC) -c $< $(CFLAGS) -o $@
+	$(CC) -c $< $(CFLAGS) $(PLATFORM_FLAGS) -o $@
+#$(CC) -c $< $(CFLAGS) -o $@
 
 
 # Phony targets are used to define tasks that need to be performed but don't result in the creation of a corresponding output file.
@@ -81,6 +91,8 @@ all: $(TARGET).out
 # The final executable target depends on object files. Links the object files using the CC compiler and includes necessary flags (CFLAGS and LDFLAGS).
 $(TARGET).out: $(OBJS)
 	$(CC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $@
+
+$(info PLATFORM = $(PLATFORM))
 
 # Phony target to remove generated files (*.o, $(TARGET).out, $(TARGET).map).
 .PHONY: clean
