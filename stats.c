@@ -37,13 +37,13 @@ void print_array(unsigned char data[], int length)
 
 // Compare function used for sorting
 int compare(const void *a, const void *b) {
-    return (*(int *)a - *(int *)b);
+    return (*(unsigned char *)a - *(unsigned char *)b);
 }
 
 float find_median(unsigned char data[], int length)
 {
   // Sort the array
-  qsort(data, length, sizeof(int), compare);
+  qsort(data, length, sizeof(unsigned char), compare);
 
   // Calculate the median
   if (length % 2 == 1) {
@@ -106,6 +106,7 @@ void sort_array(unsigned char data[], int length) {
     }
 }
 
+
 void main() {
 
   unsigned char test[SIZE] = { 34, 201, 190, 154,   8, 194,   2,   6,
@@ -126,8 +127,8 @@ void main() {
 
   printf("\nThe mean value of this array is: %.2f.", mean_value);
   printf("\nThe median value of this array is: %.2f.", median_value);
-  printf("\nThe minimum value of this array is: %.2f.", min_value);
-  printf("\nThe maximum value of this array is: %.2f.", max_value);
+  printf("\nThe minimum value of this array is: %u.", min_value);
+  printf("\nThe maximum value of this array is: %u.\n", max_value);
 
 }
 
