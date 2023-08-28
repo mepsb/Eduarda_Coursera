@@ -15,14 +15,12 @@
  Platform - MSP432
 ******************************************************************************/
 #if defined (MSP432)
-#   pragma message "Platform MSP432 is defined"
 #include "msp432p401r.h"
 #define PRINTF(...)
 /******************************************************************************
  Platform - HOST
 ******************************************************************************/
 #elif defined (HOST)
-#   pragma message "Platform HOST is defined"
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
 /******************************************************************************

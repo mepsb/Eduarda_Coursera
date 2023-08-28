@@ -21,6 +21,7 @@
  *
  */
 #include "platform.h"
+#include "system_msp432p401r.h"
 #include "memory.h"
 
 #define MAX_LENGTH (10)

@@ -1,83 +1,36 @@
-#******************************************************************************
-# Copyright (C) 2017 by Alex Fosdick - University of Colorado
-#
-# Redistribution, modification or use of this software in source or binary
-# forms is permitted as long as the files maintain this copyright. Users are 
-# permitted to modify this and use it to learn about the field of embedded
-# software. Alex Fosdick and the University of Colorado are not liable for any
-# misuse of this material. 
-#
-#*****************************************************************************
-
-#------------------------------------------------------------------------------
-# <Put a Description Here>
-#
-# Use: make [TARGET] [PLATFORM-OVERRIDES]
-#
-# Build Targets:
-#      <Put a description of the supported targets here>
-#
-# Platform Overrides:
-#      <Put a description of the supported Overrides here
-#
-#------------------------------------------------------------------------------
 include sources.mk
 
-# Platform Overrides
-# Compiler Flags for different platforms
+# Include directories
+INCLUDES = -I../include/msp432 -I../include/CMSIS -I../include/common
+
+# General Flags
+GENERAL_FLAGS = -Wall -Werror -g -O0 -std=c99
+
+# Platform Specific Flags
 ifeq ($(PLATFORM),MSP432)
-# Architectures Specific Flags
-LINKER_FILE = msp432p401r.lds
-# Specifies the target ARM Cortex Architecture
-CPU = cortex-m4
-# Specifies the instructions set architecture. For ARM processor, there are two main instructions sets - ARM and Thumb
-ARCH = thumb
-# Specifies the specs file to give to the linker. "nosys.specs" means that the standard I/O syscalls are not provided by the system.
-SPECS = nosys.specs 
-LDFLAGS_ARCH = -T $(LINKER_FILE)
-CFLAGS_ARCH = -mcpu=$(CPU) -m$(ARCH) --specs=$(SPECS) -I/some/directory
-PLATFORM_FLAGS = -DPLATFORM_MSP432
-# Compiler Flags and Defines
-# CC - Compiler that will perform the build (Native or Cross)
-CC = arm-none-eabi-gcc
-# LD - Specifies the linker to be used 
-LD = arm-none-eabi-ld
+    CC = arm-none-eabi-gcc
+    PLATFORM_FLAGS = -DMSP432
+    LINKER_FILE = ../msp432p401r.lds
+    LDFLAGS += -T $(LINKER_FILE)
+	CPU = cortex-m4
+	ARCH = thumb
+	SPECS = nosys.specs 
+    ARCH_FLAGS = -mcpu=$(CPU) -m$(ARCH) --specs=$(SPECS)
+else ifeq ($(PLATFORM),HOST)
+    CC = gcc
+    PLATFORM_FLAGS = -DHOST
+    ARCH_FLAGS =
 endif
-
-
-ifeq ($(PLATFORM),HOST)
-PLATFORM_FLAGS = -DPLATFORM_HOST
-CC = gcc
-endif
-
-
 
 # TARGET - Specifies the target name for the final executable
 TARGET = c1m2
 
-# LDFLAGS - Linker Flags
-# Map file generation: -Wl,-Map=$(TARGET).map 
-# Linker file: -T $(LINKER_FILE)
-#LDFLAGS = -Wl,-Map=$(TARGET).map -T $(LINKER_FILE)
-LDFLAGS = -Wl,-Map=$(TARGET).map $(LDFLAGS_ARCH)
+# Combine all flags
+CFLAGS += $(INCLUDES) $(GENERAL_FLAGS) $(ARCH_FLAGS)
+CFLAGS += $(PLATFORM_FLAGS)
 
-
-# CFLAGS - C-programming flags for gcc
-# Specifies compilation flags, including the CPU and ARCH settings, specs file, and enabling all compiler warnings with -Wall
-CFLAGS = $(INCLUDES) $(CFLAGS_ARCH) -Wall -Werror -g -O0 -I/some/directory
-
-# CPPFLAGS - C-Preprocessor Flags
-# For now, they won't be declared 
-CPPFLAGs = 
-
-# Defines a list of object files based on source files. It uses substitution to replace .c with .o in source file names.
+# Object files
 OBJS = $(SOURCES:.c=.o)
-
-# Pattern rule that specifies how to compile C source files into object files. It uses the CC variable, along with CFLAGS.
-%.o : %.c
-	$(CC) -c $< $(CFLAGS) $(PLATFORM_FLAGS) -o $@
-#$(CC) -c $< $(CFLAGS) -o $@
-
 
 # Phony targets are used to define tasks that need to be performed but don't result in the creation of a corresponding output file.
 # Phony target that calls the "all" target
@@ -88,13 +41,17 @@ build: all
 .PHONY: all
 all: $(TARGET).out
 
-# The final executable target depends on object files. Links the object files using the CC compiler and includes necessary flags (CFLAGS and LDFLAGS).
 $(TARGET).out: $(OBJS)
-	$(CC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
-$(info PLATFORM = $(PLATFORM))
 
-# Phony target to remove generated files (*.o, $(TARGET).out, $(TARGET).map).
+%.o : %.c
+	$(CC) -c $< $(CFLAGS) -MMD -MP -I../include/ -o $@
+
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(TARGET).out $(TARGET).map
+	rm -f $(OBJS) $(TARGET).out
+
+.PHONY: run
+run: $(TARGET).out
+	./$(TARGET).out
